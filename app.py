@@ -9,7 +9,7 @@ The app only loads the pipeline that was trained and saved by
 user data.
 """
 
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import joblib
 import pandas as pd
@@ -79,6 +79,37 @@ def render_questionnaire() -> Optional[Answers]:
     return answers
 
 
+def validate_answers(answers: Answers) -> List[str]:
+    """Check the answers against the ranges seen during training.
+
+    The widgets already restrict the input, but the model must never
+    receive values outside of the training domain, so the answers are
+    checked once more before the prediction.
+
+    Args:
+        answers: Answers of the user, one entry per feature column.
+
+    Returns:
+        A list of problem descriptions. The list is empty if all answers
+        are valid.
+    """
+    problems = []
+    for column in config.QUESTION_COLUMNS:
+        if answers.get(column) not in SCALE_VALUES:
+            problems.append(f"Question {column}: answer must be 1-5.")
+    age = answers.get("age")
+    if not isinstance(age, int) or not (
+            config.MIN_AGE <= age <= config.MAX_AGE):
+        problems.append(
+            f"Age must be between {config.MIN_AGE} and {config.MAX_AGE}."
+        )
+    if answers.get("gender") not in config.GENDER_OPTIONS:
+        problems.append("Gender: unknown option.")
+    if answers.get("hand") not in config.HAND_OPTIONS:
+        problems.append("Writing hand: unknown option.")
+    return problems
+
+
 def build_input_frame(answers: Answers) -> pd.DataFrame:
     """Turn the answers into the one-row DataFrame the pipeline expects.
 
@@ -137,9 +168,24 @@ def main() -> None:
         st.stop()
 
     pipeline = load_pipeline()
+    if list(pipeline.feature_names_in_) != config.FEATURE_COLUMNS:
+        st.error(
+            "The saved model does not match the expected input columns. "
+            "Please re-run `02_modeling.ipynb` to recreate it."
+        )
+        st.stop()
+
     answers = render_questionnaire()
     if answers is not None:
-        show_result(pipeline, build_input_frame(answers))
+        problems = validate_answers(answers)
+        if problems:
+            st.error("Please check your input:\n\n- "
+                     + "\n- ".join(problems))
+        else:
+            try:
+                show_result(pipeline, build_input_frame(answers))
+            except Exception as error:  # noqa: BLE001 - show, don't crash
+                st.error(f"The prediction failed: {error}")
 
     st.markdown(get_footer_html(), unsafe_allow_html=True)
 
