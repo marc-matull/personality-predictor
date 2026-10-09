@@ -16,6 +16,7 @@ import pandas as pd
 import streamlit as st
 
 from src import config
+from src.ocean import get_banner_html, get_footer_html, get_ocean_css
 from src.personality_types import PERSONALITY_TYPES
 from src.questions import QUESTIONS, SCALE_HINT, SCALE_VALUES
 
@@ -30,6 +31,12 @@ def load_pipeline():
         The fitted scikit-learn pipeline (preprocessing + model).
     """
     return joblib.load(config.MODEL_PATH)
+
+
+def apply_ocean_theme() -> None:
+    """Inject the ocean styles and show the animated banner."""
+    st.markdown(f"<style>{get_ocean_css()}</style>", unsafe_allow_html=True)
+    st.markdown(get_banner_html(), unsafe_allow_html=True)
 
 
 def render_questionnaire() -> Optional[Answers]:
@@ -62,7 +69,9 @@ def render_questionnaire() -> Optional[Answers]:
                 key=f"question_{column}",
             )
 
-        submitted = st.form_submit_button("Predict my personality type")
+        submitted = st.form_submit_button(
+            "\U0001F30A Dive in: predict my type"
+        )
 
     if not submitted:
         return None
@@ -98,8 +107,10 @@ def show_result(pipeline, input_frame: pd.DataFrame) -> None:
         index=pipeline.classes_,
     ).sort_values(ascending=False)
 
-    st.header(f"Your personality type: {prediction}")
-    st.write(PERSONALITY_TYPES[prediction]["description"])
+    info = PERSONALITY_TYPES[prediction]
+    st.header(f"{info['creature']} Your personality type: {prediction}")
+    st.write(f"Your sea creature: **{info['creature_name']}**. "
+             f"{info['description']}")
     st.metric("Model confidence", f"{probabilities[prediction]:.0%}")
 
     st.subheader("Probability of each type")
@@ -111,9 +122,10 @@ def main() -> None:
     # Must be the first Streamlit command
     st.set_page_config(page_title="Personality Type Predictor",
                        page_icon="\U0001F30A")
-    st.title("Personality Type Predictor")
+    apply_ocean_theme()
+    st.title("Personality Ocean")
     st.write(
-        "Answer a short questionnaire and a machine learning model "
+        "Dive into a short questionnaire and a machine learning model "
         "predicts your personality type."
     )
 
@@ -128,6 +140,8 @@ def main() -> None:
     answers = render_questionnaire()
     if answers is not None:
         show_result(pipeline, build_input_frame(answers))
+
+    st.markdown(get_footer_html(), unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
