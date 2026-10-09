@@ -1,0 +1,25 @@
+# Data and model artifacts (never committed, see README for how to obtain/recreate them)
+data/*
+!data/.gitkeep
+models/*
+!models/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# MLflow artifacts (not used in this project, ignored for safety)
+mlruns/
+mlartifacts/
+mlflow.db
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
