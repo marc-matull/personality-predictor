@@ -99,4 +99,104 @@ animierten Ozean-Umgebung statt. 🐋🐢🐬
 
 ## Setup
 
-_Wird in einem späteren Schritt ergänzt._
+Diese Anleitung geht davon aus, dass du das Repository gerade geklont hast und
+sonst nichts besitzt. **Voraussetzungen:** Git und **Python 3.12**
+(mit dieser Version wurde das Projekt getestet).
+
+```bash
+git clone <repository-url>
+cd <repository-ordner>
+```
+
+### 1. Daten beschaffen
+
+Lade die Datei `data.csv` aus dem Google-Drive-Ordner herunter:
+https://drive.google.com/drive/folders/1KhwTPAG07EdaENW_XX9nVvKhC-DP1Ags?usp=sharing
+
+Lege sie **genau hier** ab (der Ordner `data/` existiert bereits):
+
+```text
+data/data.csv
+```
+
+### 2. Umgebung erstellen
+
+```bash
+python -m venv .venv
+
+# Linux / macOS
+source .venv/bin/activate
+
+# Windows (PowerShell)
+.venv\Scripts\Activate.ps1
+```
+
+### 3. Abhängigkeiten installieren
+
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Notebooks ausführen
+
+Die Notebooks müssen **in dieser Reihenfolge** ausgeführt werden:
+
+| Reihenfolge | Notebook | Ergebnis | Laufzeit |
+| --- | --- | --- | --- |
+| 1 | `notebooks/01_eda.ipynb` | `data/clean.csv` | wenige Sekunden |
+| 2 | `notebooks/02_modeling.ipynb` | `models/personality_pipeline.joblib` | einige Minuten (Hyperparameter-Tuning) |
+
+Entweder interaktiv mit JupyterLab (im jeweiligen Notebook
+*Run → Run All Cells* wählen):
+
+```bash
+jupyter lab
+```
+
+oder direkt im Terminal:
+
+```bash
+cd notebooks
+jupyter nbconvert --to notebook --execute --inplace 01_eda.ipynb
+jupyter nbconvert --to notebook --execute --inplace 02_modeling.ipynb
+cd ..
+```
+
+Die Notebooks müssen aus dem Ordner `notebooks/` heraus laufen (das ist beim
+Öffnen in JupyterLab der Standard). Da alle Zufallsschritte `random_state=42`
+verwenden, entsteht bei jedem Durchlauf dasselbe Modell mit denselben
+Scores.
+
+### 5. Streamlit-App lokal starten
+
+```bash
+streamlit run app.py
+```
+
+Die App öffnet sich im Browser (Standard: http://localhost:8501). Sie benötigt
+die Datei `models/personality_pipeline.joblib` aus Schritt 4. Fehlt sie, zeigt
+die App einen Hinweis.
+
+## Projektstruktur
+
+```text
+.
+├── README.md
+├── requirements.txt
+├── app.py                      # Streamlit-App
+├── .streamlit/config.toml      # helles Theme für die App
+├── data/                       # NICHT committet: data.csv, clean.csv
+├── models/                     # NICHT committet: personality_pipeline.joblib
+├── notebooks/
+│   ├── 01_eda.ipynb            # EDA und Bereinigung
+│   └── 02_modeling.ipynb       # Pipeline, Modellvergleich, Tuning, Export
+├── src/
+│   ├── config.py               # Konstanten, Pfade, Spalten (random_state=42)
+│   ├── preprocessing.py        # Vorverarbeitungs-Pipeline
+│   ├── evaluation.py           # Metriken und Cross-Validation
+│   ├── questions.py            # Fragetexte der App
+│   ├── personality_types.py    # Beschreibung der vier Typen
+│   └── ocean.py                # Ozean-Design der App
+└── docs/
+    └── ablaufplan.md           # Projektplan
+```
