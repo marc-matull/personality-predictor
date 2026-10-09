@@ -12,9 +12,11 @@ user data.
 from typing import Dict, Optional, Union
 
 import joblib
+import pandas as pd
 import streamlit as st
 
 from src import config
+from src.personality_types import PERSONALITY_TYPES
 from src.questions import QUESTIONS, SCALE_HINT, SCALE_VALUES
 
 Answers = Dict[str, Union[int, str]]
@@ -68,6 +70,42 @@ def render_questionnaire() -> Optional[Answers]:
     return answers
 
 
+def build_input_frame(answers: Answers) -> pd.DataFrame:
+    """Turn the answers into the one-row DataFrame the pipeline expects.
+
+    The columns must have exactly the names and the order that were used
+    for training (``config.FEATURE_COLUMNS``).
+
+    Args:
+        answers: Answers of the user, one entry per feature column.
+
+    Returns:
+        A DataFrame with a single row.
+    """
+    return pd.DataFrame([answers])[config.FEATURE_COLUMNS]
+
+
+def show_result(pipeline, input_frame: pd.DataFrame) -> None:
+    """Predict the personality type and display the result.
+
+    Args:
+        pipeline: The fitted pipeline.
+        input_frame: One-row DataFrame created by ``build_input_frame``.
+    """
+    prediction = pipeline.predict(input_frame)[0]
+    probabilities = pd.Series(
+        pipeline.predict_proba(input_frame)[0],
+        index=pipeline.classes_,
+    ).sort_values(ascending=False)
+
+    st.header(f"Your personality type: {prediction}")
+    st.write(PERSONALITY_TYPES[prediction]["description"])
+    st.metric("Model confidence", f"{probabilities[prediction]:.0%}")
+
+    st.subheader("Probability of each type")
+    st.bar_chart(probabilities)
+
+
 def main() -> None:
     """Render the app."""
     # Must be the first Streamlit command
@@ -89,9 +127,7 @@ def main() -> None:
     pipeline = load_pipeline()
     answers = render_questionnaire()
     if answers is not None:
-        # The prediction itself follows in the next step
-        st.write("Collected answers:", answers)
-        st.caption(f"Model classes: {', '.join(pipeline.classes_)}")
+        show_result(pipeline, build_input_frame(answers))
 
 
 if __name__ == "__main__":
