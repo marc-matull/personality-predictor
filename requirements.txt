@@ -1,0 +1,9 @@
+# Python 3.12 recommended (tested with 3.12)
+jupyterlab==4.6.4
+pandas==3.0.6
+matplotlib==3.11.2
+seaborn==0.13.2
+numpy==2.5.3
+scikit-learn==1.9.1
+joblib==1.6.0
+streamlit==1.65.0
