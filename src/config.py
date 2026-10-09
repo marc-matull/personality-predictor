@@ -38,3 +38,11 @@ CATEGORICAL_COLUMNS = ["gender", "hand"]
 # input must always contain exactly these columns in exactly this order.
 FEATURE_COLUMNS = NUMERIC_COLUMNS + CATEGORICAL_COLUMNS
 TARGET_COLUMN = "target"
+
+# --------------------------------------------------------------------------
+# App input definitions (must match the categories seen during training)
+# --------------------------------------------------------------------------
+MIN_AGE = 13  # Youngest age kept by the data cleaning
+MAX_AGE = 100  # Oldest age kept by the data cleaning
+GENDER_OPTIONS = ["Female", "Male", "Other"]
+HAND_OPTIONS = ["Right", "Left", "Both"]

@@ -9,10 +9,15 @@ The app only loads the pipeline that was trained and saved by
 user data.
 """
 
+from typing import Dict, Optional, Union
+
 import joblib
 import streamlit as st
 
 from src import config
+from src.questions import QUESTIONS, SCALE_HINT, SCALE_VALUES
+
+Answers = Dict[str, Union[int, str]]
 
 
 @st.cache_resource(show_spinner="Loading model ...")
@@ -23,6 +28,44 @@ def load_pipeline():
         The fitted scikit-learn pipeline (preprocessing + model).
     """
     return joblib.load(config.MODEL_PATH)
+
+
+def render_questionnaire() -> Optional[Answers]:
+    """Show the questionnaire form and collect the answers.
+
+    Returns:
+        A dictionary with one entry per feature column once the form was
+        submitted, otherwise ``None``.
+    """
+    with st.form("questionnaire"):
+        st.subheader("About you")
+        age_col, gender_col, hand_col = st.columns(3)
+        age = age_col.number_input(
+            "Age", min_value=config.MIN_AGE, max_value=config.MAX_AGE,
+            value=25, step=1,
+        )
+        gender = gender_col.selectbox("Gender", config.GENDER_OPTIONS)
+        hand = hand_col.selectbox("Writing hand", config.HAND_OPTIONS)
+
+        st.subheader("Questionnaire")
+        st.caption(f"How well does each statement describe you? "
+                   f"{SCALE_HINT}.")
+        answers: Answers = {}
+        for column in config.QUESTION_COLUMNS:
+            answers[column] = st.radio(
+                QUESTIONS[column],
+                options=SCALE_VALUES,
+                index=2,  # neutral default
+                horizontal=True,
+                key=f"question_{column}",
+            )
+
+        submitted = st.form_submit_button("Predict my personality type")
+
+    if not submitted:
+        return None
+    answers.update({"age": int(age), "gender": gender, "hand": hand})
+    return answers
 
 
 def main() -> None:
@@ -44,10 +87,11 @@ def main() -> None:
         st.stop()
 
     pipeline = load_pipeline()
-    st.caption(
-        "Model loaded. It distinguishes the types: "
-        + ", ".join(pipeline.classes_)
-    )
+    answers = render_questionnaire()
+    if answers is not None:
+        # The prediction itself follows in the next step
+        st.write("Collected answers:", answers)
+        st.caption(f"Model classes: {', '.join(pipeline.classes_)}")
 
 
 if __name__ == "__main__":
