@@ -18,3 +18,12 @@ venv/
 Thumbs.db
 .idea/
 .vscode/
+
+# Safety net: trained models and raw data files must never be committed,
+# not even by accident outside of data/ and models/
+*.joblib
+*.pkl
+*.csv
+
+# Streamlit secrets (not used in this project, ignored for safety)
+.streamlit/secrets.toml
